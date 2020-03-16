@@ -1,5 +1,5 @@
-make-plone-qrcode
-=================
+collective.make-plone-qrcode
+============================
 
 Create a QR code and inject the Plone logo.
 
