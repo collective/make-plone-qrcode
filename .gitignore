@@ -33,9 +33,11 @@ MANIFEST
 
 # VirtualEnv
 Include/
+include/
 Scripts/
 bin/
 tcl/
+lib64
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -46,6 +48,7 @@ tcl/
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+pip-selfcheck.json
 
 # Unit test / coverage reports
 htmlcov/
