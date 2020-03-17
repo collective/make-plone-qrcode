@@ -14,12 +14,12 @@ from thebops.errors import err, fatal, check_errors, info
 from thebops.colours import add_colour_option, SVG_COLOURS
 
 __author__ = 'Tobias Herp <tobias.herp@visaplan.com>'
-__version__ = 'mk-plone-qr v0.1'
+__version__ = 'make-plone-qrcode v0.1'
 
 
 SVG_COLOURS['plone'] = (0, 157, 220)
 
-def _(s, *args, **kwargs):
+def _(s, *args, **kwargs):  # i18n dummy
     return s
 
 
