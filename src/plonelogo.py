@@ -115,7 +115,7 @@ def make_parser():
                  ))
     p.add_option_group(g)
 
-    g = OptionGroup(p, 'QR Code options')
+    g = OptionGroup(p, 'SVG options')
     g.add_option('--scale',
                  type='float',
                  metavar='N',
