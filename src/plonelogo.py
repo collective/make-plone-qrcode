@@ -63,14 +63,8 @@ def make_parser():
     p = OptionParser(description=_('Create QR codes with the Plone logo injected'),
             add_help_option=False,
             usage='%prog [options] {string} {filename}')
-    g = OptionGroup(p, 'QR Code creation')
-    g.add_option('--title',
-                 type='string',
-                 help=_('A title for the QR code; empty '
-                 'by default.'
-                 ' This is not a visible caption text,'
-                 ' and it is not guaranteed that browsers honour it in any way!'
-                 ))
+
+    g = OptionGroup(p, 'Basic options')
     g.add_option('--url',
                  type='string',
                  help=_('A URL to be encoded; if no protocol is given,'
@@ -80,6 +74,48 @@ def make_parser():
                  ' If a --title was given, the --url defaults to that title'
                  ' preprended by an "https://" protocol prefix.'
                  ))
+    g.add_option('--filename',
+                 type='string',
+                 dest='filename',
+                 metavar='plone.svg',
+                 help=_('The name of the file to write;'
+                 ' can be alternatively specified'
+                 ' as the 2nd positional argument.'
+                 ' Unless already present, a ".svg" extension is appended.'
+                 ))
+    g.add_option('--title',
+                 type='string',
+                 help=_('A title for the QR code; empty '
+                 'by default.'
+                 ' This is not a visible caption text,'
+                 ' and it is not guaranteed that browsers honour it in any way!'
+                 ))
+    p.add_option_group(g)
+
+    g = OptionGroup(p, 'Logo injection')
+    g.add_option('--logo-size',
+                 type='float',
+                 default=32,
+                 metavar='NN.N',
+                 help=_('The size of the Plone logo in percent; default: %default.'
+                 ' QR codes contain enough redundancy to cope with up to 30% of '
+                 'the data modules covered; you may try higher values, but '
+                 'you\'ll need to check the result for scanability yourself.'
+                 ))
+    g.add_option('--extra-space',
+                 type='float',
+                 dest='space_percent',
+                 default=3,
+                 metavar='N.N',
+                 help=_('Extra space around the Plone logo, '
+                 'in percent relative to the total size'
+                 ' (so the resulting percentage is the sum of --logo-size'
+                 ' and --extra-space)'
+                 '; default: %default.'
+                 ))
+    p.add_option_group(g)
+
+    g = OptionGroup(p, 'QR Code options')
     g.add_option('--scale',
                  type='float',
                  metavar='N',
@@ -96,12 +132,22 @@ def make_parser():
                  ' this can be overridden'
                  ' e.g. if the margin is created otherwise.'
                  ))
+    p.add_option_group(g)
+
+    g = OptionGroup(p, 'Colours')
     # doesn't emit string values yet; we'll need to convert ourselves:
     add_colour_option(g, '--module-color', '--module-colour',
                  default='black',
                  help=_('A valid XML color specification, or "plone", '
                  'which will be translated to "#009ddc", the colour of the Plone '
                  'logo; default: %default.'
+                 ))
+    add_colour_option(g, '--logo-color', '--logo-colour',
+                 metavar='#009ddc',
+                 help=_('A valid XML color specification, or "plone", '
+                 'which will be translated to "#009ddc", the color of the Plone '
+                 'logo.'
+                 ' Defaults to the module color.'
                  ))
     add_colour_option(g, '--background',
                  alpha=True,
@@ -114,48 +160,6 @@ def make_parser():
                  'however, for the logo we need full opacity (1.0), so the '
                  'logo background is opaque and white by default, and any '
                  'alpha channel value will only be used for the QR code part.'
-                 ))
-    p.add_option_group(g)
-
-    g = OptionGroup(p, 'Logo injection')
-    g.add_option('--logo-size',
-                 type='float',
-                 default=32,
-                 metavar='NN.N',
-                 help=_('The size of the Plone logo in percent; default: %default.'
-                 ' QR codes contain enough redundancy to cope with up to 30% of '
-                 'the data modules covered; you may try higher values, but '
-                 'you\'ll need to check the result for scanability yourself.'
-                 ))
-    add_colour_option(g, '--logo-color', '--logo-colour',
-                 metavar='#009ddc',
-                 help=_('A valid XML color specification, or "plone", '
-                 'which will be translated to "#009ddc", the color of the Plone '
-                 'logo.'
-                 ' Defaults to the module color.'
-                 ))
-    g.add_option('--extra-space',
-                 type='float',
-                 dest='space_percent',
-                 default=3,
-                 metavar='N.N',
-                 help=_('Extra space around the Plone logo, '
-                 'in percent relative to the total size'
-                 ' (so the resulting percentage is the sum of --logo-size'
-                 ' and --extra-space)'
-                 '; default: %default.'
-                 ))
-    p.add_option_group(g)
-
-    g = OptionGroup(p, 'File options')
-    g.add_option('--name',
-                 type='string',
-                 dest='filename',
-                 metavar='plone.svg',
-                 help=_('The name of the file to write;'
-                 ' can be alternatively specified'
-                 ' as the 2nd positional argument.'
-                 ' Unless already present, a ".svg" extension is appended.'
                  ))
     p.add_option_group(g)
 
