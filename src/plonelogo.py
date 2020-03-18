@@ -359,15 +359,20 @@ def main():
         try:
             val = int(text)
         except ValueError:
-            if '://' not in text:
-                text = 'https://'+text
-            if o.verbose:
-                info('Encoding text '+text)
+            pass
         else:
             text = val
             qr_kwargs['mode'] = 'numeric'
-            if o.verbose:
-                info('Encoding number %(val)d' % locals())
+    if qr_kwargs['mode'] == 'numeric':
+        if o.verbose:
+            info('Encoding number %(val)d' % locals())
+    else:
+        if '://' not in text:
+            text = 'https://'+text
+    if o.qr_mode == 'alphanumeric':
+        text = text.upper()
+        if o.verbose:
+            info('Encoding text '+text)
 
     try:
         code_o = pyqrcode.create(text, **qr_kwargs)
