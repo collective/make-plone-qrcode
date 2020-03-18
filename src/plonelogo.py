@@ -243,13 +243,15 @@ def plone_logo_elements(total, **kwargs):
     percent = pop('logo_size') / 100.0
     space_percent = pop('space_percent', 3.0) / 100.0
     background = pop('background', 'white')
+    padding = pop('padding')
+    code_height = total - 2 * padding
     if kwargs:
         keys = list(kwargs.keys())
         raise TypeError('Unsupported keyword arguments %(keys)s!'
                         % locals())
-    logo_height = logo_width = total * percent
+    logo_height = logo_width = code_height * percent
     if space_percent > 0:
-        space_radius = total * (percent + space_percent) / 2.0
+        space_radius = code_height * (percent + space_percent) / 2.0
     logo_radius = logo_height / 2.0
     logo_strike = logo_height / 10.0
     # first we calculate simple "inner" values
@@ -264,7 +266,7 @@ def plone_logo_elements(total, **kwargs):
     cy1 = upper_horizontal_tangent + small_radius
     cy2 = logo_height - cy1
 
-    offset = (total - logo_height) / 2
+    offset = (code_height - logo_height) / 2 + padding
     # now add the offset
     cx1 += offset
     cx2 += offset
@@ -390,6 +392,7 @@ def main():
     logo_kwargs = {
             'logo_color': untuple_colour(o.logo_color),
             'logo_size':  o.logo_size,
+            'padding':    o.scale * o.quiet_zone,
             }
     if o.background is not None:
         logo_kwargs['background'] = untuple_colour(o.background[:3])
