@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*- הצü
 
 import pyqrcode
+from pyqrcode.tables import error_level, version_size
 from lxml import etree
 from lxml.builder import ElementMaker
 from StringIO import StringIO
 from os.path import splitext
 
-from thebops.optparse import OptionParser, OptionGroup
+from thebops.optparse import OptionParser, OptionGroup, OptionValueError
 from thebops.opo import (add_version_option, add_help_option,
         add_verbosity_options,
         )
@@ -58,6 +59,19 @@ def untuple_colour(val):
                             for num in val])
     return val
 
+
+def cb_checkrange(option, opt_str, value, parser, lowest, highest, factory):
+    """
+    Simple callback function: check the value range
+    """
+    assert lowest < highest
+    if not lowest <= value <= highest:
+        raise OptionValueError('%(value)r: value between %(lowest)r '
+                'and %(highest)r expected!'
+                % locals())
+    setattr(parser.values, option.dest, factory(value))
+
+mode_choices = 'numeric alphanumeric kanji binary'.split()
 
 def make_parser():
     p = OptionParser(description=_('Create QR codes with the Plone logo injected'),
@@ -117,13 +131,14 @@ def make_parser():
 
     g = OptionGroup(p, 'SVG options')
     g.add_option('--scale',
-                 type='float',
+                 type='int',
                  metavar='N',
                  default=4,
                  help=_('The scale to be used, default: %default, which will '
                  'cause the "modules" to span %default screen pixels.'
                  ))
     g.add_option('--quiet-zone',
+                 dest='quiet_zone',
                  type='int',
                  default=4,
                  metavar='N',
@@ -131,6 +146,47 @@ def make_parser():
                  ' of %default module widths, as requested by the standard;'
                  ' this can be overridden'
                  ' e.g. if the margin is created otherwise.'
+                 ))
+    p.add_option_group(g)
+
+    g = OptionGroup(p, 'QR code options')
+    g.add_option('--qr-version',  # "version"
+                 dest='qr_version',
+                 type='int',
+                 action='callback',
+                 # choices=list(range(1, 41)),
+                 metavar='1..40',
+                 callback=cb_checkrange,
+                 callback_kwargs=dict(lowest=1, highest=40, factory=int),
+                 help=_('The standard defines 40 "versions" (1 to 40);'
+                 ' version 1 is the smallest possible QR code with 21x21'
+                 ' modules. This is usually chosen automatically;'
+                 ' you might want to set the version yourself, e.g. if you'
+                 ' have a set of QR codes which should be the same size.'
+                 ))
+    g.add_option('--qr-error', '--qr-correction-level',  # "error"
+                 dest='qr_error',
+                 choices=list('LlMmQqHh')+'7 15 25 30'.split(),
+                 metavar='{L,7,M,15,Q,25,L,30}',
+                 help=_('This defines the amount of error correction data.'
+                 ' The "error level" L allows for 7% of the data to be'
+                 ' corrected, which makes it a poor choice if a logo is'
+                 ' intended to cover a considerable part of the data area.'
+                 ' Level H allows for 30% to be corrected; this is the default'
+                 ' choice of the pyqrcode library.'
+                 ))
+    g.add_option('--qr-mode',  # "mode"
+                 dest='qr_mode',
+                 choices=mode_choices,
+                 metavar='binary|numeric|alphanumeric|kanji',
+                 help=_('Will by default be guessed by the pyqrcode module. '
+                 'The "alphanumeric" mode is limited to a reduced uppercase-on'
+                 'ly character set which should be sufficient for many URLs, '
+                 'provided there is no path component, or /AN/UPPERCASE/PATH '
+                 'is acceptable. '
+                 'The "numeric" mode is for integer numbers only, '
+                 'and the "kanji" mode is for Japanese text; '
+                 'thus, most of the time we\'ll get "binary".'
                  ))
     p.add_option_group(g)
 
@@ -234,6 +290,30 @@ def plone_logo_elements(total, **kwargs):
     yield CIRCLE(cx=s(cx3), cy=s(cy3), r=s(small_radius), fill=logo_color)
 
 
+def qr_code_info_lines(code, options):
+    version = code.version
+    modules = version_size[version]
+    yield ('Creating a QR code of version %(version)r '
+           '(%(modules)dx%(modules)d modules)'
+           % locals())
+    scale = options.scale
+    quiet_zone = options.quiet_zone
+    width = (modules + 2 * quiet_zone) * scale
+    height = width
+    yield ('Native width / height will be %(width)dx%(height)d px'
+           % locals())
+    error = code.error
+    tmp_list = [key
+                for key in error_level
+                if not isinstance(key, float)
+                   and key.endswith(u'%')
+                   and error_level[key] == error
+                   ]
+    percent = tmp_list[0]
+    yield ('Error level will be %(error)s, allowing for %(percent)s correction'
+           % locals())
+
+
 def main():
     p = make_parser()
     o, a = p.parse_args()
@@ -266,13 +346,35 @@ def main():
     if o.logo_color is None:
         o.logo_color = o.module_color
 
-    io = StringIO()
-    if not '://' in text:
-        text = 'https://'+text
-        if o.verbose:
-            info('Encoding text '+text)
+    qr_kwargs = {}
+    if o.qr_version is not None:
+        qr_kwargs['version'] = o.qr_version
+    if o.qr_error is not None:
+        qr_kwargs['error'] = o.qr_error
+    if o.qr_mode is not None:
+        qr_kwargs['mode'] = o.qr_mode
+    else:
+        try:
+            val = int(text)
+        except ValueError:
+            if '://' not in text:
+                text = 'https://'+text
+            if o.verbose:
+                info('Encoding text '+text)
+        else:
+            text = val
+            qr_kwargs['mode'] = 'numeric'
+            if o.verbose:
+                info('Encoding number %(val)d' % locals())
 
-    code_o = pyqrcode.create(text)
+    try:
+        code_o = pyqrcode.create(text, **qr_kwargs)
+    except ValueError as e:
+        fatal(str(e))
+    if o.verbose >= 2:
+        for line in qr_code_info_lines(code_o, o):
+            info(line)
+
     svg_kwargs = {}
     if o.title is not None:
         svg_kwargs['title'] = o.title
@@ -285,7 +387,6 @@ def main():
     if o.scale is not None:
         svg_kwargs['scale'] = o.scale
 
-
     logo_kwargs = {
             'logo_color': untuple_colour(o.logo_color),
             'logo_size':  o.logo_size,
@@ -293,6 +394,7 @@ def main():
     if o.background is not None:
         logo_kwargs['background'] = untuple_colour(o.background[:3])
 
+    io = StringIO()
     code_o.svg(io, **svg_kwargs)
     io.seek(0)
     tree = etree.parse(io)
