@@ -6,7 +6,7 @@ Create a QR code and inject the Plone logo.
 .. image:: docs/make-plone-qrcode.svg
    :align: right
 
-The whole heavy-lifting rocket science of creating a QR code and formatting it
+The whole rocket science of creating a QR code and formatting it
 as an SVG image is done by the pyqrcode_ package.
 In this image the Plone logo is injected, covering the centre of the code.
 
