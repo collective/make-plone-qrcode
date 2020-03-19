@@ -167,7 +167,7 @@ def make_parser():
     g.add_option('--qr-error', '--qr-correction-level',  # "error"
                  dest='qr_error',
                  choices=list('LlMmQqHh')+'7 15 25 30'.split(),
-                 metavar='{L,7,M,15,Q,25,L,30}',
+                 metavar='{L,7,M,15,Q,25,H,30}',
                  help=_('This defines the amount of error correction data.'
                  ' The "error level" L allows for 7% of the data to be'
                  ' corrected, which makes it a poor choice if a logo is'
